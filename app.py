@@ -11,6 +11,7 @@ from datetime import datetime
 import pymysql
 pymysql.install_as_MySQLdb()
 
+
 from model import Message, Project, SystemLog, db, User  
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your_secret_key'
