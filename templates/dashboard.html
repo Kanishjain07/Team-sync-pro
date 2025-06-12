@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard - Team Sync Pro</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+{% if current_user.role == 'Admin' %}
+    <p>Welcome Admin</p>
+    <!-- Show admin tools -->
+{% elif current_user.role == 'Team Lead' %}
+    <p>Welcome Team Lead</p>
+{% else %}
+    <p>Welcome Member</p>
+{% endif %}
+
+<body>
+    <header>
+        <div class="logo">Team Sync Pro</div>
+        <nav>
+            <ul>
+                <li><a href="/">Home</a></li>
+                <li><a href="/video_conference">Video Call</a></li>
+                <li><a href="/task_progress">Task progress</a></li>
+                <li><a href="/chat">Chat room</a></li>
+                <li><a href="/logout">Logout</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main class="dashboard">
+        <h2>Welcome to your Dashboard</h2>
+        <div class="grid">
+            <div class="card">
+                <h3>Project Overview</h3>
+                <p>Track tasks, updates, and deadlines in one place.</p>
+            </div>
+            <div class="card">
+                <h3>Messages</h3>
+                <p>Check your team chats and messages here.</p>
+            </div>
+            <div class="card">
+                <h3>File Sharing</h3>
+                <p>Upload and manage shared documents.</p>
+            </div>
+            <div class="card">
+                <h3>Team Activity</h3>
+                <p>See what your teammates are working on.</p>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2025 Team Sync Pro. All rights reserved.</p>
+    </footer>
+</body>
+</html>

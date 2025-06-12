@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Register - Team Sync Pro</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <header>
+        <div class="logo">Team Sync Pro</div>
+        <nav>
+            <ul>
+                <li><a href="/home">Home</a></li>
+                <li><a href="/login">Login</a></li>
+                <li><a href="/register">Register</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main class="form-container">
+        <h2>Create Your Account</h2>
+<form action="/register" method="POST">
+    <label>Username</label>
+    <input type="text" name="username" required>
+
+    <label>Email</label>
+    <input type="email" name="email" required>
+
+    <label>Password</label>
+    <input type="password" name="password" required>
+
+    <label>Confirm Password</label>
+    <input type="password" name="confirm_password" required>
+
+    <button type="submit" class="btn">Register</button>
+    <select name="role" required>
+  <option value="Admin">Admin</option>
+  <option value="Team Lead">Team Lead</option>
+  <option value="Member">Member</option>
+</select>
+
+</form>
+
+        <p>Already have an account? <a href="/login">Login here</a></p>
+    </main>
+
+    <footer>
+        <p>&copy; 2025 Team Sync Pro. All rights reserved.</p>
+    </footer>
+</body>
+</html>

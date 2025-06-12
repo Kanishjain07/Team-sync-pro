@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>File Upload - Team Sync Pro</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <header>
+        <div class="logo">Team Sync Pro</div>
+        <nav>
+            <ul>
+                <li><a href="/dashboard">Dashboard</a></li>
+                <li><a href="/file_upload">File Upload</a></li>
+                <li><a href="/chat">Chat</a></li>
+                <li><a href="/logout">Logout</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main class="upload-container">
+        <h2>Upload and Share Files</h2>
+        <form action="/upload" method="post" enctype="multipart/form-data">
+            <input type="file" name="file" required>
+            <button type="submit" class="btn">Upload</button>
+        </form>
+
+        <h3>Shared Files</h3>
+        <ul class="file-list">
+            <!-- Example, replace dynamically -->
+            <li><a href="/download/report.pdf">report.pdf</a></li>
+            <li><a href="/download/design.png">design.png</a></li>
+        </ul>
+    </main>
+
+    <footer>
+        <p>&copy; 2025 Team Sync Pro. All rights reserved.</p>
+    </footer>
+</body>
+</html>
