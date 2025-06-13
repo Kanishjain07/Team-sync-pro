@@ -17,7 +17,7 @@ app.config['SECRET_KEY'] = 'your_secret_key'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://user:password@host:port/dbname'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 import os
-app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv("DATABASE_URL")
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL')
 
 db.init_app(app)
 bcrypt = Bcrypt(app)
