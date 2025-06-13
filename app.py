@@ -11,12 +11,13 @@ from datetime import datetime
 import pymysql
 pymysql.install_as_MySQLdb()
 
-
 from model import Message, Project, SystemLog, db, User  
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your_secret_key'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:1234@localhost:3306/team_sync'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://user:password@host:port/dbname'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+import os
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv("DATABASE_URL")
 
 db.init_app(app)
 bcrypt = Bcrypt(app)
