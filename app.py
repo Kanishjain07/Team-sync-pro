@@ -1,23 +1,31 @@
+import os
 from flask import Flask, render_template, request, redirect, url_for, flash
 from flask_bcrypt import Bcrypt
 from flask_login import LoginManager, login_user, logout_user, current_user, login_required
-from werkzeug.security import generate_password_hash, check_password_hash
 from flask_migrate import Migrate
-from flask import Flask, render_template, redirect, url_for
-from flask_login import login_required, current_user
-from role_required import role_required 
+from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
+from dotenv import load_dotenv  # NEW for local env support
+
+from model import db, User, Project, Message, SystemLog
+from role_required import role_required
 
 import pymysql
 pymysql.install_as_MySQLdb()
 
-from model import Message, Project, SystemLog, db, User  
+# Load environment variables
+load_dotenv()
+
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'your_secret_key'
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'fallback_secret_key')
+
+# ✅ Proper database config for Railway or local
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL')
+if not app.config['SQLALCHEMY_DATABASE_URI']:
+    raise RuntimeError("❌ DATABASE_URL is not set. Set it in Railway or .env.")
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-import os
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL')
+
 
 db.init_app(app)
 bcrypt = Bcrypt(app)
