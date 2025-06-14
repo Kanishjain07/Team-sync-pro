@@ -17,9 +17,9 @@ pymysql.install_as_MySQLdb()
 load_dotenv()
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'fallback_secret_key')
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
 
-# ✅ Proper database config for Railway or local
+# ✅ Proper database config for Railway or localx
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL')
 if not app.config['SQLALCHEMY_DATABASE_URI']:
     raise RuntimeError("❌ DATABASE_URL is not set. Set it in Railway or .env.")
