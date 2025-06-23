@@ -1,36 +1,40 @@
-import os
-from flask import Flask, render_template, request, redirect, url_for, flash
+from flask import Flask, request, jsonify, redirect, url_for
 from flask_bcrypt import Bcrypt
 from flask_login import LoginManager, login_user, logout_user, current_user, login_required
 from flask_migrate import Migrate
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
-from dotenv import load_dotenv  # NEW for local env support
-
-from model import db, User, Project, Message, SystemLog
-from role_required import role_required
-
+import os
+import secrets
+from dotenv import load_dotenv
 import pymysql
-pymysql.install_as_MySQLdb()
 
-# Load environment variables
+from model import Message, Project, SystemLog, db, User
+from auth import auth_bp
+from admin import admin_bp
+from common import common_bp
+from role_required import role_required
+from lead import lead_bp
+pymysql.install_as_MySQLdb()
 load_dotenv()
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
-
-# ✅ Proper database config for Railway or localx
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL')
-if not app.config['SQLALCHEMY_DATABASE_URI']:
-    raise RuntimeError("❌ DATABASE_URL is not set. Set it in Railway or .env.")
-
+app.config['SECRET_KEY'] = 'your_secret_key'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:1234@localhost:3306/team_sync'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
+API_KEY = os.getenv("API_KEY", secrets.token_hex(32))
+
+
+app.register_blueprint(auth_bp)
+app.register_blueprint(admin_bp)
+app.register_blueprint(common_bp)
+app.register_blueprint(lead_bp)
 
 db.init_app(app)
 bcrypt = Bcrypt(app)
 login_manager = LoginManager(app)
-login_manager.login_view = 'login'
+login_manager.login_view = 'auth.login'
 migrate = Migrate(app, db)
 
 @login_manager.user_loader
@@ -39,224 +43,70 @@ def load_user(user_id):
 
 @app.route('/')
 def home():
-    return render_template('home.html')
+    return jsonify({'message': 'Welcome to Team Sync Pro '}), 200
 
-@app.route('/dashboard')
+@app.route('/dashboard', methods=['GET'])
 @login_required
 def dashboard():
-    if current_user.role == 'Admin':
-        
-        total_users = User.query.count()
-        active_projects = Project.query.filter_by(is_active=True).count()
-        messages_today = Message.query.filter(
-            db.func.date(Message.timestamp) == datetime.utcnow().date()
-        ).count()
-
-        stats = {
-            'total_users': total_users,
-            'active_projects': active_projects,
-            'messages_today': messages_today
-        }
-        return render_template('admin_dashboard.html', stats=stats)
-
-    elif current_user.role == 'Team Lead':
-        return render_template('lead_dashboard.html')
-    
+    role = current_user.role.lower()
+    if role == 'admin':
+        return redirect(url_for('admin.dashboard'))
+    elif role == 'team lead':
+        return redirect(url_for('lead_dashboard'))
+    elif role == 'member':
+        return redirect(url_for('member_dashboard'))
     else:
-        return render_template('member_dashboard.html')
+        return jsonify({'error': 'Unauthorized Role'}), 403
 
-@app.route('/lead/dashboard')
+@app.route('/lead/dashboard', methods=['GET'])
 @login_required
 @role_required('Team Lead')
 def lead_dashboard():
-    return render_template('team_lead_dashboard.html')
+    return jsonify({'message': 'Welcome to Team Lead Dashboard'}), 200
 
-@app.route('/member/dashboard')
+@app.route('/member/dashboard', methods=['GET'])
 @login_required
 @role_required('Member')
 def member_dashboard():
-    return render_template('member_dashboard.html')
+    return jsonify({'message': 'Welcome to Member Dashboard'}), 200
 
-@app.route('/login', methods=['GET', 'POST'])
-def login():
-    if request.method == 'POST':
-        email = request.form['email']
-        password = request.form['password']
-        user = User.query.filter_by(email=email).first()
-
-        if user and check_password_hash(user.password, password):
-            login_user(user)
-            return redirect(url_for('dashboard'))
-
-        flash('Invalid email or password.', 'danger')
-    return render_template('login.html')
-
-
-@app.route('/register', methods=['GET', 'POST'])
-def register():
-    if request.method == 'POST':
-        username = request.form['username']
-        email = request.form['email']
-        password = request.form['password']
-        confirm_password = request.form['confirm_password']
-
-        if password != confirm_password:
-            flash('Passwords do not match. Please try again.', 'danger')
-            return render_template('register.html')
-
-        existing_user = User.query.filter_by(email=email).first()
-        if existing_user:
-            flash('Email is already registered. Please log in.', 'danger')
-            return redirect(url_for('login'))
-
-        hashed_password = generate_password_hash(password, method='pbkdf2:sha256')
-
-        new_user = User(username=username, email=email, password=hashed_password)
-        role = request.form['role']
-        new_user = User(username=username, email=email, password=hashed_password, role=role)
-
-        
-        db.session.add(new_user)
-        db.session.commit()
-
-        flash('Account created successfully! You can now log in.', 'success')
-        return redirect(url_for('login'))
-
-    return render_template('register.html')
-
-@app.route('/notification')
-@login_required
-def notification():
-    return render_template('notification.html')
-
-@app.route('/video_conference')
-@login_required
-def video_conference():
-    return render_template('video_conference.html')
-@app.route('/chat')
-@login_required
-def chat():
-    return render_template('chat.html')
-
-@app.route('/file_upload')
-@login_required
-def file_upload():
-    return render_template('file_upload.html')
-
-@app.route('/task_progress')
-@login_required
-def task_progress():
-    return render_template('task_progress.html')
-
-@app.route('/calendar')
-@login_required
-def calendar():
-    return render_template('calendar.html')
-
-@app.route('/manage_users')
-@login_required
-@role_required('Admin')
-def manage_users():
-    users = User.query.all()
-    return render_template('manage_users.html', users=users)
-
-@app.route('/edit_user/<int:user_id>', methods=['GET', 'POST'])
-@login_required
-@role_required('Admin')
-def edit_user(user_id):
-    user = User.query.get_or_404(user_id)
-
-    if request.method == 'POST':
-        user.username = request.form['username']
-        user.email = request.form['email']
-        user.role = request.form['role']
-        
-        db.session.commit()
-        flash('User updated successfully!', 'success')
-        return redirect(url_for('manage_users'))
-
-    return render_template('edit_user.html', user=user)
-
-
-@app.route('/delete_user/<int:user_id>')
-@login_required
-@role_required('Admin')
-def delete_user(user_id):
-    new_log = SystemLog(username=current_user.username, action=f"Deleted user {user.username}")
-    db.session.add(new_log)
-    db.session.commit()
-    user = User.query.get_or_404(user_id)
-    db.session.delete(user)
-    db.session.commit()
-    flash('User deleted successfully!', 'success')
-    return redirect(url_for('manage_users'))
-
-@app.route('/system_logs')
-@login_required
-@role_required('Admin')
-def system_logs():
-    logs = SystemLog.query.order_by(SystemLog.timestamp.desc()).all()
-    return render_template('system_logs.html', logs=logs)
-
-@app.route('/projects')
-@login_required
-def view_projects():
-    projects = Project.query.all()  
-    return render_template('project.html', projects=projects)
-
-@app.route('/create_project', methods=['GET', 'POST'])
+@app.route('/create_project', methods=['POST'])
 @login_required
 @role_required(['Admin', 'Team Lead'])
 def create_project():
-    if request.method == 'POST':
-        title = request.form['title']
-        description = request.form['description']
-        status = request.form['status']
+    data = request.json
+    title = data.get('title')
+    description = data.get('description')
+    status = data.get('status')
 
-        new_project = Project(title=title, description=description, status=status)
-        db.session.add(new_project)
-        db.session.commit()
+    new_project = Project(title=title, description=description, status=status)
+    db.session.add(new_project)
+    db.session.commit()
 
-        flash('Project created successfully!', 'success')
-        return redirect(url_for('view_projects'))
+    return jsonify({'message': 'Project created successfully'}), 201
 
-    return render_template('create_project.html')
-
-@app.route('/edit_project/<int:project_id>', methods=['GET', 'POST'])
+@app.route('/edit_project/<int:project_id>', methods=['PUT'])
 @login_required
 @role_required(['Admin', 'Team Lead'])
 def edit_project(project_id):
     project = Project.query.get_or_404(project_id)
+    data = request.json
 
-    if request.method == 'POST':
-        project.title = request.form['title']
-        project.description = request.form['description']
-        project.status = request.form['status']
+    project.title = data.get('title', project.title)
+    project.description = data.get('description', project.description)
+    project.status = data.get('status', project.status)
 
-        db.session.commit()
-        flash('Project updated successfully!', 'success')
-        return redirect(url_for('view_projects'))
+    db.session.commit()
+    return jsonify({'message': 'Project updated successfully'}), 200
 
-    return render_template('edit_project.html', project=project)
-
-@app.route('/delete_project/<int:project_id>')
+@app.route('/delete_project/<int:project_id>', methods=['DELETE'])
 @login_required
 @role_required(['Admin', 'Team Lead'])
 def delete_project(project_id):
     project = Project.query.get_or_404(project_id)
     db.session.delete(project)
     db.session.commit()
-
-    flash('Project deleted successfully!', 'success')
-    return redirect(url_for('view_projects'))
-
-
-@app.route('/logout')
-@login_required
-def logout():
-    logout_user()
-    flash('You have been logged out.', 'info')
-    return redirect(url_for('login'))
+    return jsonify({'message': 'Project deleted successfully'}), 200
 
 with app.app_context():
     db.create_all()
